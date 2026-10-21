@@ -1,10 +1,10 @@
 # Development plan and GitHub workflow
 
-Status: phase 0 documentation. Only this phase's local files and commits are authorized. Later phase starts and remote publication require the user's explicit agreement.
+Status: phase 0 documentation. The user authorized a public repository and phase 0 publication, delegated the name choice, and required English throughout the project. The selected name is TaskRelay. Later phase starts, later publication, and PR merges require the user's explicit agreement.
 
 ## Environment inspection
 
-Inspection performed on 2026-10-21. The original workspace is the independent Core5G repository at `ABDOUUisHERE/5G-Core-Network-Simulator`; its working tree was clean. NexusMesh lives in the sibling `nexusmesh` directory with separate Git metadata.
+Inspection performed on 2026-10-21. The original workspace is the independent Core5G repository at `ABDOUUisHERE/5G-Core-Network-Simulator`; its working tree was clean. TaskRelay lives in the sibling `taskrelay` directory with separate Git metadata.
 
 | Tool | Observed status |
 | --- | --- |
@@ -30,9 +30,9 @@ Phase 1 must provision or select the missing Linux toolchain and confirm Docker 
 6. For subsequent approved phases, branch from the latest reviewed `main`, keep commits focused, run relevant checks, and open/update the phase PR after publication is authorized.
 7. Merge only with user authorization and required checks satisfied. Phase completion alone does not authorize a merge or publication.
 
-Use conventional commit subjects such as `docs(architecture): define task lifecycle`, `build(cmake): add reproducible C++ toolchain`, or `feat(state): enforce lease fencing`. Commit titles describe changes actually present. PR descriptions explain resulting behavior, verification, and material limitations. Link issue numbers only after real issues exist.
+Use English for all documentation, source code, comments, user-facing content, commit messages, and PR descriptions. Use conventional commit subjects such as `docs(architecture): define task lifecycle`, `build(cmake): add reproducible C++ toolchain`, or `feat(state): enforce lease fencing`. Commit titles describe changes actually present. PR descriptions explain resulting behavior, verification, and material limitations. Link issue numbers only after real issues exist.
 
-Issues and milestones can track the phases after the remote repository exists and their creation is authorized. No GitHub PR, issue, successful workflow, or hosting URL exists as part of this local design phase.
+The public repository is [ABDOUUisHERE/taskrelay](https://github.com/ABDOUUisHERE/taskrelay). Phase 0 is submitted from `docs/architecture` for review. Issues and milestones can track later phases once authorized. No implementation, successful workflow, deployment, or benchmark is claimed by phase 0.
 
 ## Phases and review gates
 
@@ -64,10 +64,10 @@ vcpkg.json
 .clang-format
 .clang-tidy
 proto/CMakeLists.txt
-proto/nexusmesh/v1/task.proto
-proto/nexusmesh/v1/router.proto
-proto/nexusmesh/v1/worker.proto
-proto/nexusmesh/v1/state.proto
+proto/taskrelay/v1/task.proto
+proto/taskrelay/v1/router.proto
+proto/taskrelay/v1/worker.proto
+proto/taskrelay/v1/state.proto
 common/CMakeLists.txt
 common/grpc/deadline.h
 services/task-router/CMakeLists.txt

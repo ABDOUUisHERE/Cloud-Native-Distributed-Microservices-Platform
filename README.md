@@ -1,10 +1,10 @@
-# NexusMesh
+# TaskRelay
 
 A C++20 distributed task-processing laboratory with gRPC microservices, Redis coordination, and planned Docker and Kubernetes deployments.
 
 **Status: phase 0 — architecture documented; implementation has not started.** This repository contains design documents only. No service, deployment, CI run, or performance result is claimed to work yet.
 
-NexusMesh is an independent project for exploring concurrency, distributed state, failure recovery, and observability. It processes bounded numeric workloads, data transformations, and entirely local synthetic network simulations.
+TaskRelay is an independent project for exploring concurrency, distributed state, failure recovery, and observability. It processes bounded numeric workloads, data transformations, and entirely local synthetic network simulations.
 
 ## Design
 
@@ -37,6 +37,6 @@ The inspected environment has GCC 13.3.0 in Ubuntu WSL, Git 2.44.0, Python 3.14.
 
 ## Contribution workflow
 
-Use a focused branch and pull request for each approved phase, with small conventional commits and recorded validation. The local `main` branch contains only the repository bootstrap; `docs/architecture` contains phase 0. No GitHub remote has been configured or publication performed.
+Use English for documentation, code, comments, user-facing messages, commits, and pull requests. Use a focused branch and pull request for each approved phase, with small conventional commits and recorded validation. The `main` branch contains only the repository bootstrap; `docs/architecture` contains phase 0 for pull-request review in the public [TaskRelay repository](https://github.com/ABDOUUisHERE/taskrelay).
 
 Before each implementation phase, present the file list and obtain approval. Publishing commits to GitHub requires explicit authorization. See the [development plan](docs/development-plan.md) for the complete workflow.

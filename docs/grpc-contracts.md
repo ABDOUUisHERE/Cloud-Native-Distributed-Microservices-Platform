@@ -4,7 +4,7 @@ Status: phase 0 interface design. This document specifies intended semantics; `.
 
 ## Versioning and representation
 
-Use package `nexusmesh.v1` and separate `task.proto`, `router.proto`, `worker.proto`, and `state.proto`. Use the standard `grpc.health.v1` health contract rather than an application-specific replacement.
+Use package `taskrelay.v1` and separate `task.proto`, `router.proto`, `worker.proto`, and `state.proto`. Use the standard `grpc.health.v1` health contract rather than an application-specific replacement.
 
 | Message | Proposed fields and constraints |
 | --- | --- |
@@ -98,4 +98,4 @@ Reference: [gRPC deadlines](https://grpc.io/docs/guides/deadlines/).
 
 ## Compatibility rules
 
-Assign explicit stable field numbers in phase 1. Never reuse deleted numbers or enum values; reserve their numbers and names. Add optional fields without changing existing meanings. Preserve unknown fields where supported and avoid changing wire types. Breaking API changes require a new package such as `nexusmesh.v2` and a documented migration. Pin compatible protoc and gRPC generation tooling with the runtime dependencies.
+Assign explicit stable field numbers in phase 1. Never reuse deleted numbers or enum values; reserve their numbers and names. Add optional fields without changing existing meanings. Preserve unknown fields where supported and avoid changing wire types. Breaking API changes require a new package such as `taskrelay.v2` and a documented migration. Pin compatible protoc and gRPC generation tooling with the runtime dependencies.

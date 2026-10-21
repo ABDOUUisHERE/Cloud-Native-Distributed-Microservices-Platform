@@ -4,9 +4,9 @@ Status: approved direction recorded during phase 0; all implementation criteria 
 
 ## Purpose and scope
 
-Build NexusMesh as an independent C++20 project targeting Linux, Docker Compose, and local Kubernetes with Kind. Demonstrate a reproducible distributed-systems laboratory suitable for a software engineering R&D interview. Keep synthetic workloads local and bounded. Prefer explicit guarantees and measured evidence over architectural complexity.
+Build TaskRelay as an independent C++20 project targeting Linux, Docker Compose, and local Kubernetes with Kind. Demonstrate a reproducible distributed-systems laboratory suitable for a software engineering R&D interview. Keep synthetic workloads local and bounded. Prefer explicit guarantees and measured evidence over architectural complexity.
 
-The source specification is the user's NexusMesh technical specification, version 1.0. This document maps its requirements to planned verification; it does not replace the specification's approval rules.
+The source is the user's original technical specification, version 1.0. The user subsequently selected a public repository, delegated the project name choice, and required the entire project to be in English. The resulting project name is TaskRelay; use English for documentation, code, comments, user-facing content, commits, and pull requests. This document maps its requirements to planned verification; it does not replace the specification's approval rules.
 
 ## Functional requirements
 
@@ -64,6 +64,6 @@ The final repository must contain `README.md` and the following documents under 
 
 ## Approval and completion rules
 
-Before each phase, present files to create or modify and obtain the user's agreement. Do not publish commits without explicit authorization. Approval of phase 0 does not authorize phase 1 or remote publication.
+Before each phase, present files to create or modify and obtain the user's agreement. Do not publish commits without explicit authorization. Phase 0 publication to the public TaskRelay repository is authorized. This does not authorize phase 1, later publication, or merging pull requests.
 
 The project is complete only when all required services compile and operate, both deployment paths work, workers distribute tasks, recovery scenarios are demonstrated, telemetry is visible, automated checks pass, and the documentation reproduces those demonstrations. No benchmark target or CI success is inferred from a design document.

@@ -110,7 +110,7 @@ Metrics use bounded labels such as service, operation, task type, status, and wo
 Only phase 0 documents and repository metadata exist initially. The target below is not a list of implemented components.
 
 ```text
-nexusmesh/
+taskrelay/
 |-- services/
 |   |-- api-gateway/
 |   |-- task-router/
@@ -122,7 +122,7 @@ nexusmesh/
 |   |-- resilience/
 |   |-- telemetry/
 |   `-- threading/
-|-- proto/nexusmesh/v1/
+|-- proto/taskrelay/v1/
 |-- redis/scripts/
 |-- tests/
 |   |-- unit/
