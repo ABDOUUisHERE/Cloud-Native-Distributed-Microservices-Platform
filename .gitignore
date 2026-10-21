@@ -1,0 +1,26 @@
+# Native build outputs and package caches
+/build/
+/out/
+/vcpkg_installed/
+/third_party/
+CMakeUserPresets.json
+compile_commands.json
+
+# Local settings and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.idea/
+.vscode/
+
+# Generated reports and runtime data
+/test-results/
+/coverage/
+/tmp/
+/data/
+*.log
+__pycache__/
+.DS_Store
+Thumbs.db
