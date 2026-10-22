@@ -1,6 +1,6 @@
 # Architecture
 
-Status: target architecture from phase 0, with a phase 1 C++/gRPC foundation verified locally on its locked Ubuntu profile. Business processing, persistence, deployments, and telemetry below remain planned. The foundation currently provides generated contracts and a worker health exchange, not the full topology.
+Status: target architecture with phase 2 implemented and verified locally. The actual topology currently uses four processes and a volatile in-memory State Service adapter. Redis, retries/recovery, deployments, and telemetry below remain planned. See the phase 2 contract boundary for the current guarantees.
 
 ## Service boundaries
 

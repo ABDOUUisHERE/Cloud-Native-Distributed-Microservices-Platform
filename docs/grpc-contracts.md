@@ -1,6 +1,6 @@
 # REST and gRPC contracts
 
-Status: phase 1 wire contracts exist under `proto/taskrelay/v1/`. CMake generates bindings during the build. Business RPC semantics below remain design requirements until their implementation phases. The phase 1 worker serves foundation health only; `ExecuteTask` returns UNIMPLEMENTED, and no State Service or submission server runs yet.
+Status: phase 2 implements submission, queries, execution, and lifecycle RPCs against a volatile memory adapter. The target contracts below also describe later Redis/retry/telemetry behavior; the phase 2 boundary is recorded explicitly at the end. The phase 1 foundation-only behavior is historical.
 
 ## Versioning and representation
 
@@ -109,3 +109,31 @@ Numeric processing starts with seeded Monte Carlo estimation of pi. Transform op
 The phase 1 probe calls the standard `grpc.health.v1.Health/Check` RPC for `taskrelay.foundation.worker`. It sets a finite deadline, bounds message sizes, disables transparent configured retries, and configures client-side round-robin. The built-in health server supports Check and Watch; business readiness is explicitly NOT_SERVING. Integration tests exercise a two-address resolver, not Kubernetes DNS membership refresh, which remains a phase 6 gate.
 
 The unmodified upstream health schema and its license attribution are documented in [the vendored contract notes](../proto/grpc/health/README.md). Project-generated C++ is not committed.
+
+## Phase 2 implementation boundary
+
+POST accepts a `TaskSpec` JSON object directly, not a `SubmitTaskRequest` wrapper. The idempotency key is supplied only in the header. The successful body is a public `Task`; `X-Idempotency-Replayed: true|false` carries replay status. List filters use full enum names such as `state=TASK_STATE_COMPLETED`. Protobuf JSON omits default-valued scalar fields and uses decimal strings for 64-bit integers.
+
+Workload limits implemented at both the gateway and state boundary:
+
+| Input | Implemented limit |
+| --- | --- |
+| Execution timeout | 1 ms through 30 s |
+| Numeric | Monte Carlo pi; 1..1,000,000 iterations; unsigned 64-bit seed |
+| Transform | ASCII uppercase or Unicode codepoint reversal; at most 32 KiB valid UTF-8 |
+| Network simulation | 1..10,000 packets, 1..4096 bytes each, at most 16 MiB total; loss 0..1,000,000 ppm |
+| Synthetic delay | 0..1 s per packet in model time; accumulated in the returned Duration; no real sleep or external network operation |
+
+The seeded generator is SplitMix64. Unicode reversal reverses scalar codepoints, not user-perceived grapheme clusters; ASCII uppercase leaves non-ASCII codepoints unchanged.
+
+The memory adapter caps retained tasks at 1024. It allocates a UUID v4, stores validated typed input and correlation ID, and enforces a 60-second task lifetime. Terminal tasks and their idempotency mappings are retained for ten minutes. Cleanup is lazy on operations, with bounded storage even when idle. Pagination scans at most 128 indexed entries per call, uses monotonic creation order, and binds the cursor to the normalized state filter. It is not a snapshot.
+
+Acquire issues a 15-second reservation and increments the attempt count. Start binds its owner and enters RUNNING; only that owner can renew or publish. Renewal is checked every five seconds from the execution RPC's control loop, independently of the processing pool. Matching completion replay succeeds; stale ownership and conflicting completion fail. A worker retains at most 1024 admitted tokens for 60 seconds and rejects re-execution, even after an ambiguous return. A new worker identity cannot start a lease already bound to another identity.
+
+The router initially dispatches one task at a time, with no hidden ExecuteTask retry. There is one execution attempt in phase 2. A definite pre-start failure, expired reservation, or expired global lifetime produces FAILED. RETRY_PENDING, durable Redis indexes, retry scheduling, and crash recovery remain phase 3/4 acceptance gates. No at-least-once recovery or exactly-once execution guarantee is made for this volatile adapter.
+
+The gateway offloads blocking RPCs to four transport threads with a queue of 32. Queue time consumes the HTTP budget. The worker uses two processing threads with eight queued work items and at most ten admitted execution RPCs. CPU computation checks cancellation cooperatively. State calls remain bounded to 500 ms and parent time remaining; a failed execution may use a separate 500 ms cleanup budget to record failure after its parent expires. HTTP disconnect cancellation is currently bounded by the downstream RPC deadline rather than immediate disconnect propagation.
+
+The gateway implements live and ready HTTP routes. Ready probes the State Service and router within one second. Internal services expose standard gRPC health for local service registration; this is not a dependency-aware readiness claim. HTTP administration listeners, /metrics, traceparent/tracestate instrumentation, automatic retries, circuit breakers, and full shutdown/recovery scenarios remain later work. Correlation IDs are validated/generated and propagated on business calls; raw lease tokens and idempotency keys are absent from REST task responses.
+
+Drogon applies the 64 KiB request cap before routing. Its transport-level 413 response can use Drogon's own body and omit an application correlation header. Application-level errors use the documented safe JSON format. The gateway disables static file types and binds loopback. Database/Redis client development packages pulled in by Ubuntu's Drogon export do not imply that those backends are used.

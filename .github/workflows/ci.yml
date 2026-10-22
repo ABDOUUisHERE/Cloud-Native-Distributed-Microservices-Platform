@@ -1,4 +1,4 @@
-name: C++ foundation
+name: C++ services
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: foundation-${{ github.workflow }}-${{ github.ref }}
+  group: services-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -28,8 +28,24 @@ jobs:
 
   build-and-test:
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 60
     steps:
+      - name: Install checkout requirements in the clean build image
+        timeout-minutes: 5
+        run: |
+          # Use the same signed Ubuntu mirror as the hosted runner.
+          sed -i \
+            -e 's|http://archive.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
+            -e 's|http://security.ubuntu.com/ubuntu|http://azure.archive.ubuntu.com/ubuntu|g' \
+            /etc/apt/sources.list.d/ubuntu.sources
+          apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 update
+          DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=30 \
+            install -y --no-install-recommends git ca-certificates
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Provision locked Ubuntu dependencies
         run: bash scripts/bootstrap-ubuntu.sh --install-tools
@@ -37,12 +53,13 @@ jobs:
         run: cmake --preset linux-analysis
       - name: Compile generated contracts and application targets
         run: cmake --build --preset linux-analysis
-      - name: Run foundation integration tests
-        run: ctest --preset linux-analysis --output-junit build/analysis/ctest.xml
+      - name: Run unit and service integration tests
+        id: tests
+        run: ctest --preset linux-analysis --output-junit "$PWD/build/analysis/ctest.xml"
       - name: Retain test report
-        if: always()
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: foundation-test-report
+          name: service-test-report
           path: build/analysis/ctest.xml
-          if-no-files-found: ignore
+          if-no-files-found: error

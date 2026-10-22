@@ -1,64 +1,96 @@
-# TaskRelay
+# Cloud-Native Distributed Microservices Platform
 
-A C++20 distributed task-processing laboratory with gRPC microservices, Redis coordination, and planned Docker and Kubernetes deployments.
+A C++20 distributed task-processing laboratory. The internal package and executable prefix is `taskrelay`.
 
-**Status: phase 1 — C++/gRPC foundation verified locally on Ubuntu 24.04.** Versioned contracts, a foundation worker, a one-shot router health probe, and nine passing tests are present. Task execution, REST, Redis, deployments, and telemetry remain planned. No successful GitHub Actions run or performance result is claimed.
+**Status: phase 2 implemented and verified locally on the locked Ubuntu profile.** Four services implement REST submission, gRPC dispatch, three bounded workloads, and volatile in-memory task state. Redis coordination, recovery/retries, containers, Kubernetes, telemetry, and benchmarks remain later phases.
 
-TaskRelay is an independent project for exploring concurrency, distributed state, failure recovery, and observability. It processes bounded numeric workloads, data transformations, and entirely local synthetic network simulations.
-
-## Design
+## Service flow
 
 ```mermaid
 flowchart LR
-    Client[REST client] --> Gateway[API Gateway]
-    Gateway -->|gRPC submission| Router[Task Router]
-    Gateway -->|gRPC queries| State[State Service]
-    Router -->|gRPC reservations| State
-    Router -->|gRPC round_robin| Workers[Processing Workers: at least two]
-    Workers -->|gRPC lifecycle and results| State
-    State --> Redis[(Redis)]
+    Client[REST client] --> Gateway[API Gateway: Drogon]
+    Gateway -->|SubmitTask| Router[Task Router]
+    Gateway -->|GetTask / ListTasks| State[State Service]
+    Router -->|CreateTask / AcquireTask| State
+    Router -->|ExecuteTask: round_robin| Worker[Processing Worker]
+    Worker -->|Start / Renew / Complete / Fail| State
+    State --> Memory[(Volatile memory: phase 2)]
 ```
 
-The State Service owns all Redis access. The router reserves queued work and distributes execution RPCs across workers. Expiring leases and fencing tokens protect accepted state updates; processing has at-least-once semantics, with possible repeated computation.
+The router stores a task before returning HTTP 202 and dispatches one task at a time through its shared round-robin worker channel. The worker has two processing threads and a queue of eight. Submission keys replay the retained task for the same typed input and return a conflict for a different input. State transitions check attempt tokens and worker ownership. These are local laboratory guarantees: restarting the State Service loses every task and idempotency key. Redis durability and restart recovery are not implemented yet.
 
-## Documentation
+## Build on Ubuntu 24.04 or WSL
 
-- [Requirements and acceptance criteria](docs/requirements.md)
-- [Architecture, dependencies, and target repository structure](docs/architecture.md)
-- [REST and gRPC contract design](docs/grpc-contracts.md)
-- [State machine and failure model](docs/resilience.md)
-- [Development phases, validation, and GitHub workflow](docs/development-plan.md)
-
-## Development status
-
-Phase 0 defines the design. Phase 1 adds CMake, locked Ubuntu dependencies, an optional pinned vcpkg profile, build-time Protobuf generation, a real gRPC health exchange, and initial formatting/static-analysis/build/test CI. `ExecuteTask` deliberately returns UNIMPLEMENTED; the worker advertises foundation health rather than processor readiness.
-
-## Build on Linux or Ubuntu WSL
-
-The default target is Ubuntu 24.04 x86-64 with GCC 13, CMake 3.28 or newer, Ninja, and Clang tooling 18. Docker is not required for phase 1. The default profile uses Ubuntu packages for gRPC 1.51.1, Protobuf 3.21.12, and GoogleTest/GoogleMock 1.14.0. Exact Debian package revisions and their related libraries are recorded in [the dependency lock](scripts/dependencies-ubuntu2404.lock). Bootstrap verifies installed revisions and installs them only when `--install-tools` is supplied.
+Use Ubuntu 24.04 amd64, GCC 13, CMake 3.28+, Ninja, and Clang tooling 18. The default profile locks gRPC 1.51.1, Protobuf 3.21.12, GoogleTest 1.14.0, and Drogon 1.8.7, including development dependencies needed by Ubuntu's Drogon CMake export.
 
 ```sh
 bash scripts/bootstrap-ubuntu.sh --install-tools
-cmake --preset linux-debug
-cmake --build --preset linux-debug
-ctest --preset linux-debug
+cmake --preset linux-analysis
+cmake --build --preset linux-analysis
+ctest --preset linux-analysis
+python3 scripts/check-format.py
 ```
 
-Run these commands inside the repository using a Linux/WSL shell. The bootstrap rejects unsupported distributions or architectures and verifies exact library package revisions. If a locked package is no longer available from configured Ubuntu mirrors, fail rather than silently upgrade; update the lock through review or restore a suitable Ubuntu package snapshot. Base OS security updates are not frozen by this library lock, so this is not a claim of bit-identical binaries.
+The bootstrap installs packages only with `--install-tools`, verifies exact revisions in [the package lock](scripts/dependencies-ubuntu2404.lock), and rejects other distributions/architectures. A missing revision is an error; review the lock or restore a suitable package snapshot rather than silently upgrading. The complete base OS and security updates are not frozen; bit-identical binaries are not promised.
 
-For a repository stored on a Windows/OneDrive mount, keep build outputs in the Linux filesystem:
+On WSL with source on Windows/OneDrive, keep outputs in the Linux filesystem. Restricting PATH avoids slow CMake searches through Windows software directories:
 
 ```sh
-cmake --preset linux-analysis -B "$HOME/.cache/taskrelay/build/foundation"
-cmake --build "$HOME/.cache/taskrelay/build/foundation" --parallel 2
-ctest --test-dir "$HOME/.cache/taskrelay/build/foundation" --output-on-failure
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+cmake --preset linux-analysis -B "$HOME/.cache/taskrelay/build/analysis"
+cmake --build "$HOME/.cache/taskrelay/build/analysis" --parallel 2
+ctest --test-dir "$HOME/.cache/taskrelay/build/analysis" --output-on-failure
 ```
 
-`linux-analysis` enables clang-tidy 18 on project sources. Generated sources are excluded. Run `python3 scripts/check-format.py` to check formatting, or add `--fix` to apply it. The `linux-release` preset builds optimized project code.
+`linux-analysis` runs clang-tidy on project sources, with compiler/lint warnings treated as errors. Generated code is excluded. `linux-debug` omits static analysis, and `linux-release` enables optimized compilation. Add `--fix` to the format script to apply formatting.
+
+## Run the four services
+
+After a default build, run one command in each of four terminals, in this order:
+
+```sh
+./build/analysis/services/state-service/taskrelay-state 127.0.0.1:50052
+./build/analysis/services/processing-worker/taskrelay-worker 127.0.0.1:50051 127.0.0.1:50052
+./build/analysis/services/task-router/taskrelay-router 127.0.0.1:50053 127.0.0.1:50052 127.0.0.1:50051
+./build/analysis/services/api-gateway/taskrelay-gateway 8080 127.0.0.1:50053 127.0.0.1:50052
+```
+
+Replace `./build/analysis` with your external build directory when applicable. The gateway binds loopback only; gRPC uses insecure transport and defaults to loopback. This is a trusted local demonstration, without authentication or TLS. Stop processes with Ctrl+C, preferably gateway, router, worker, then state.
+
+Submit a transformation:
+
+```sh
+curl -i http://127.0.0.1:8080/api/v1/tasks \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: example-transform' \
+  -H 'X-Correlation-Id: example-request' \
+  -d '{"type":"TASK_TYPE_TRANSFORM","executionTimeout":"2s","transform":{"operation":"OPERATION_ASCII_UPPERCASE","data":"hello"}}'
+```
+
+HTTP 202 includes the public task representation, `Location`, and `X-Idempotency-Replayed`. Query the returned location until the state is COMPLETED or FAILED:
+
+```sh
+curl http://127.0.0.1:8080/api/v1/tasks/REPLACE_WITH_TASK_ID
+curl 'http://127.0.0.1:8080/api/v1/tasks?page_size=20&state=TASK_STATE_COMPLETED'
+curl http://127.0.0.1:8080/health/live
+curl http://127.0.0.1:8080/health/ready
+```
+
+REST uses Protobuf JSON: enum names are explicit, 64-bit integers serialize as decimal strings, durations use seconds such as `"2s"`, and absent default scalar fields mean their Protobuf defaults. Unknown fields, unsupported operations, invalid UTF-8, and oversized inputs are rejected. See [the contracts](docs/grpc-contracts.md) for numeric and network input shapes and error mapping.
+
+The gateway has four RPC transport threads and 32 queued requests. Its live route runs directly on the HTTP event loop. Ready checks the State Service and router; it returns 503 when either is unavailable. gRPC health reports local service registration; dependency-aware internal readiness remains phase 4 work. `/metrics` and HTTP administration listeners for internal services remain phase 7 work.
+
+The memory store retains at most 1024 tasks, with a 60-second global task lifetime and ten-minute terminal retention. Lease expiry or dispatch failure finalizes FAILED in this phase; automatic retries and recovery are deferred. The synthetic network workload never contacts a remote host: packet delay is simulated model time, not wall-clock sleeping.
+
+A one-shot worker health probe remains available:
+
+```sh
+./build/analysis/services/task-router/taskrelay-router --probe 127.0.0.1:50051
+```
 
 ## Optional source dependency profile
 
-The vcpkg manifest and tool checkout are pinned to `67972e92edd181d433927b42d8ab4bfa52ac164a`, selecting gRPC 1.81.1, Protobuf 7.36.2, and GoogleTest 1.18.0. The initial complete source build was too expensive for the routine foundation workflow and was stopped during gRPC compilation. Its full build and runtime tests are **not verified**. The default Ubuntu profile is the supported phase 1 validation target and the CI target.
+The vcpkg manifest/tool checkout use baseline `67972e92edd181d433927b42d8ab4bfa52ac164a`. It selects newer gRPC/Protobuf/GoogleTest plus Drogon and OpenSSL. The full source profile remains **unverified**: the original build was stopped during gRPC compilation, and the added HTTP dependency has not been source-built. The locked Ubuntu profile is the validation and CI target.
 
 ```sh
 bash scripts/bootstrap-wsl.sh --install-tools
@@ -69,28 +101,15 @@ cmake --build --preset linux-vcpkg-debug
 ctest --preset linux-vcpkg-debug
 ```
 
-This optional path downloads and compiles dependencies into caches and can take substantially longer. The release-only triplet avoids compiling each dependency twice. Project code still follows its Debug preset. Bootstrap refuses to modify an existing vcpkg checkout at a different revision. Do not combine generated files or library paths from the two profiles.
+Do not mix generated bindings or dependency paths between profiles.
 
-## Try the foundation exchange
+## Documentation and contribution
 
-After building with the default `linux-debug` preset, start the worker in one terminal:
+- [Architecture and target topology](docs/architecture.md)
+- [Requirements and acceptance criteria](docs/requirements.md)
+- [REST and gRPC contracts](docs/grpc-contracts.md)
+- [State machine and failure model](docs/resilience.md)
+- [Testing and reproducible checks](docs/testing.md)
+- [Development phases and GitHub workflow](docs/development-plan.md)
 
-```sh
-./build/debug/services/processing-worker/taskrelay-worker 127.0.0.1:50051
-```
-
-In another terminal, run the one-shot router probe:
-
-```sh
-./build/debug/services/task-router/taskrelay-router dns:///localhost:50051
-```
-
-It prints `Worker foundation health: SERVING` and exits successfully when the foundation health service responds within 500 ms. A stopped or unavailable worker produces a nonzero exit within the deadline. Use Ctrl+C to stop the worker. These processes use insecure loopback transport for local development; they are not a deployment or the complete task-routing implementation.
-
-For an external build directory, replace `./build/debug` with that directory. The automated process smoke test starts the actual worker and router binaries, checks success, stops the worker, and confirms an unavailable-worker failure.
-
-## Contribution workflow
-
-Use English for documentation, code, comments, user-facing messages, commits, and pull requests. Use a focused branch and pull request for each approved phase, with small conventional commits and recorded validation. The `main` branch contains reviewed phases; phase 0 was merged through PR #1 in the public [TaskRelay repository](https://github.com/ABDOUUisHERE/taskrelay). Phase 1 is developed on `build/cpp-grpc-foundation` before publication and review.
-
-Before each implementation phase, present the file list and obtain approval. Publishing commits to GitHub requires explicit authorization. See the [development plan](docs/development-plan.md) for the complete workflow.
+Use English throughout the project and focused conventional commits on a phase branch. Phases 0 and 1 were reviewed and merged through PRs #1 and #2 in [the public repository](https://github.com/ABDOUUisHERE/Cloud-Native-Distributed-Microservices-Platform). Phase 2 is developed on `feat/task-processing`. Each phase needs scope approval; publishing commits and merging require authorization.

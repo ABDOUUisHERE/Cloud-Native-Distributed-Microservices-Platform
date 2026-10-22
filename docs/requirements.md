@@ -1,12 +1,12 @@
 # Requirements and acceptance criteria
 
-Status: approved direction recorded during phase 0; phase 1 adds wire contracts and a gRPC foundation. The full acceptance criteria below remain pending until their corresponding service, deployment, and test phases are implemented.
+Status: phases 0 and 1 are merged; phase 2 implements and locally verifies REST and task processing. Full acceptance remains pending for Redis, recovery, telemetry, deployments, and the later test phases.
 
 ## Purpose and scope
 
 Build TaskRelay as an independent C++20 project targeting Linux, Docker Compose, and local Kubernetes with Kind. Demonstrate a reproducible distributed-systems laboratory suitable for a software engineering R&D interview. Keep synthetic workloads local and bounded. Prefer explicit guarantees and measured evidence over architectural complexity.
 
-The source is the user's original technical specification, version 1.0. The user subsequently selected a public repository, delegated the project name choice, and required the entire project to be in English. The resulting project name is TaskRelay; use English for documentation, code, comments, user-facing content, commits, and pull requests. This document maps its requirements to planned verification; it does not replace the specification's approval rules.
+The source is the user's original technical specification, version 1.0. The user subsequently selected a public repository, delegated the project name choice, and required the entire project to be in English. The public repository is Cloud-Native-Distributed-Microservices-Platform, with `taskrelay` as the internal package/executable prefix; use English for documentation, code, comments, user-facing content, commits, and pull requests. This document maps its requirements to planned verification; it does not replace the specification's approval rules.
 
 ## Functional requirements
 
@@ -64,6 +64,10 @@ The final repository must contain `README.md` and the following documents under 
 
 ## Approval and completion rules
 
-Before each phase, present files to create or modify and obtain the user's agreement. Do not publish commits without explicit authorization. Phase 0 was published and merged with approval. Phase 1 local implementation is authorized; its publication, merge, and later phase starts require their own approval.
+Before each phase, present files to create or modify and obtain the user's agreement. Do not publish commits without explicit authorization. Phase 0 was published and merged with approval. Phase 1 was published and merged through PR #2 with successful GitHub Actions. Phase 2 local implementation was approved; its publication, merge, and later phase starts require their own approval.
 
 The project is complete only when all required services compile and operate, both deployment paths work, workers distribute tasks, recovery scenarios are demonstrated, telemetry is visible, automated checks pass, and the documentation reproduces those demonstrations. No benchmark target or CI success is inferred from a design document.
+
+## Phase 2 acceptance boundary
+
+REST and real gRPC processing implement F01/F04 and the core of F03/F09 against memory. Input validation, correlation propagation, concurrent key replay, bounded executors, and ownership checks cover parts of F02/F05/R01/R03/R07. This does not satisfy durable persistence, Redis coordination, retries/recovery, worker distribution metrics, complete internal readiness, or tracing. See [the current contract boundary](grpc-contracts.md#phase-2-implementation-boundary) and [testing](testing.md) for reproducible checks and remaining limits.

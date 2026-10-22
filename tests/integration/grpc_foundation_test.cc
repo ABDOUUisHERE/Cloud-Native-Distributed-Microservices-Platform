@@ -88,7 +88,7 @@ TEST_F(GrpcFoundationTest, UnknownServiceIsNotReportedHealthy) {
   EXPECT_EQ(status.error_code(), grpc::StatusCode::NOT_FOUND);
 }
 
-TEST_F(GrpcFoundationTest, BusinessExecutionIsExplicitlyUnimplemented) {
+TEST_F(GrpcFoundationTest, GeneratedBaseServiceLeavesExecutionUnimplemented) {
   auto stub = taskrelay::v1::WorkerService::NewStub(channel_);
   grpc::ClientContext context;
   taskrelay::SetDeadline(context, 500ms);
