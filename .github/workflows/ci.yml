@@ -28,8 +28,17 @@ jobs:
 
   build-and-test:
     runs-on: ubuntu-24.04
+    container:
+      image: ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+    defaults:
+      run:
+        shell: bash
     timeout-minutes: 60
     steps:
+      - name: Install checkout requirements in the clean build image
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends git ca-certificates
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Provision locked Ubuntu dependencies
         run: bash scripts/bootstrap-ubuntu.sh --install-tools

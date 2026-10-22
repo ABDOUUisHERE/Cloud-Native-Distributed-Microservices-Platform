@@ -42,6 +42,8 @@ A passing test of the generated base service's UNIMPLEMENTED default does not me
 
 ## Current limits
 
+The build/test CI job uses a digest-pinned Ubuntu 24.04 job container. This keeps the runner's preinstalled third-party PostgreSQL packages outside the locked library profile: a newer PGDG `libpq5` otherwise conflicts with Ubuntu's exact `libpq-dev` dependency. Git and CA certificates are installed before checkout; the existing bootstrap installs and verifies the application dependencies. This container is a CI environment, not an application image or a Compose deployment. See [GitHub's job-container documentation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflows-run/run-jobs-in-a-container).
+
 No Redis, Docker, Kind, recovery/retry, telemetry, distribution-metric, or performance acceptance test has run for phase 2. Memory expiry tests inject time; they do not establish Redis atomicity or crash durability. The router dispatches one task at a time, so worker pool concurrency/capacity is tested at the primitive boundary rather than claimed as measured platform throughput. Internal gRPC health currently means local registration, not dependency readiness.
 
 No benchmark numbers are reported. Record real environment details, raw samples, and configurations before publishing any throughput or latency comparison in phase 8.
