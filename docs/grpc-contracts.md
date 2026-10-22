@@ -1,12 +1,12 @@
 # REST and gRPC contracts
 
-Status: phase 0 interface design. This document specifies intended semantics; `.proto` files and generated bindings will be introduced in phase 1.
+Status: phase 1 wire contracts exist under `proto/taskrelay/v1/`. CMake generates bindings during the build. Business RPC semantics below remain design requirements until their implementation phases. The phase 1 worker serves foundation health only; `ExecuteTask` returns UNIMPLEMENTED, and no State Service or submission server runs yet.
 
 ## Versioning and representation
 
 Use package `taskrelay.v1` and separate `task.proto`, `router.proto`, `worker.proto`, and `state.proto`. Use the standard `grpc.health.v1` health contract rather than an application-specific replacement.
 
-| Message | Proposed fields and constraints |
+| Message | Fields and intended validation constraints |
 | --- | --- |
 | `TaskSpec` | `TaskType type`, typed `oneof input`, bounded requested execution timeout |
 | `NumericInput` | Numeric operation enum, positive bounded iteration count, deterministic seed |
@@ -98,4 +98,14 @@ Reference: [gRPC deadlines](https://grpc.io/docs/guides/deadlines/).
 
 ## Compatibility rules
 
-Assign explicit stable field numbers in phase 1. Never reuse deleted numbers or enum values; reserve their numbers and names. Add optional fields without changing existing meanings. Preserve unknown fields where supported and avoid changing wire types. Breaking API changes require a new package such as `taskrelay.v2` and a documented migration. Pin compatible protoc and gRPC generation tooling with the runtime dependencies.
+Explicit field numbers are defined in the checked-in `.proto` files. Never reuse deleted numbers or enum values; reserve their numbers and names. Add optional fields without changing existing meanings. Preserve unknown fields where supported and avoid changing wire types. Breaking API changes require a new package such as `taskrelay.v2` and a documented migration. The Ubuntu lock and optional vcpkg baseline each pin their own matching generation/runtime dependencies; never reuse generated bindings across profiles.
+
+## Phase 1 wire details
+
+`TaskSpec` uses `type = 1`, a typed input oneof at fields 2–4, and `execution_timeout = 5`. `Task` fields 1–10 define its public view; sensitive lease tokens are confined to `TaskLease`. `AcquireTaskResponse` uses message presence: an absent `lease` means no work. Standard Protobuf Timestamp and Duration messages specify units explicitly.
+
+Numeric processing starts with seeded Monte Carlo estimation of pi. Transform operations name ASCII uppercase and Unicode-codepoint reversal explicitly; their implementation must validate UTF-8 rather than accidentally reversing encoded bytes. Synthetic network inputs contain counts, sizes, a seed, loss in parts per million, and a synthetic delay. They have no remote address field. ExecuteTaskResponse separates COMPLETED, RETRY_SCHEDULED, and FAILED outcomes, avoiding confusion between an execution attempt's outcome and the task's global state.
+
+The phase 1 probe calls the standard `grpc.health.v1.Health/Check` RPC for `taskrelay.foundation.worker`. It sets a finite deadline, bounds message sizes, disables transparent configured retries, and configures client-side round-robin. The built-in health server supports Check and Watch; business readiness is explicitly NOT_SERVING. Integration tests exercise a two-address resolver, not Kubernetes DNS membership refresh, which remains a phase 6 gate.
+
+The unmodified upstream health schema and its license attribution are documented in [the vendored contract notes](../proto/grpc/health/README.md). Project-generated C++ is not committed.

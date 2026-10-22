@@ -1,0 +1,48 @@
+name: C++ foundation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Install formatter
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-18
+      - name: Check project formatting
+        run: python3 scripts/check-format.py
+
+  build-and-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Provision locked Ubuntu dependencies
+        run: bash scripts/bootstrap-ubuntu.sh --install-tools
+      - name: Configure with static analysis
+        run: cmake --preset linux-analysis
+      - name: Compile generated contracts and application targets
+        run: cmake --build --preset linux-analysis
+      - name: Run foundation integration tests
+        run: ctest --preset linux-analysis --output-junit build/analysis/ctest.xml
+      - name: Retain test report
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: foundation-test-report
+          path: build/analysis/ctest.xml
+          if-no-files-found: ignore

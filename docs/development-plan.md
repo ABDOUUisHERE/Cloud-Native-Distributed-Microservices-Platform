@@ -1,6 +1,6 @@
 # Development plan and GitHub workflow
 
-Status: phase 0 documentation. The user authorized a public repository and phase 0 publication, delegated the name choice, and required English throughout the project. The selected name is TaskRelay. Later phase starts, later publication, and PR merges require the user's explicit agreement.
+Status: phase 0 merged through PR #1; phase 1 is implemented and verified locally on `build/cpp-grpc-foundation` using the locked Ubuntu profile. The project uses English throughout. Remote publication of phase 1 and later phase starts remain subject to explicit approval.
 
 ## Environment inspection
 
@@ -18,7 +18,7 @@ Inspection performed on 2026-10-21. The original workspace is the independent Co
 | CMake, Ninja, protoc, clang++, clang-format, clang-tidy, Kind | Unavailable in checked Windows PATH and Ubuntu WSL |
 | gh, vcpkg, Conan | Unavailable in checked Windows PATH |
 
-Phase 1 must provision or select the missing Linux toolchain and confirm Docker readiness before relying on containers. Native WSL builds remain an alternative if Docker is unavailable. No installations have been performed during phase 0.
+These are the phase 0 observations. Phase 1 installed CMake 3.28.3, Ninja 1.11.1, Clang tooling 18.1.3, and supporting build tools in Ubuntu WSL. The default profile uses locked Ubuntu library packages. A pinned vcpkg checkout was also bootstrapped, but its complete source build was stopped during gRPC compilation; that optional runtime profile remains unverified. Phase 1 does not depend on Docker; engine and Kind availability remain outside the current verification.
 
 ## Git and review workflow
 
@@ -32,7 +32,7 @@ Phase 1 must provision or select the missing Linux toolchain and confirm Docker 
 
 Use English for all documentation, source code, comments, user-facing content, commit messages, and PR descriptions. Use conventional commit subjects such as `docs(architecture): define task lifecycle`, `build(cmake): add reproducible C++ toolchain`, or `feat(state): enforce lease fencing`. Commit titles describe changes actually present. PR descriptions explain resulting behavior, verification, and material limitations. Link issue numbers only after real issues exist.
 
-The public repository is [ABDOUUisHERE/taskrelay](https://github.com/ABDOUUisHERE/taskrelay). Phase 0 is submitted from `docs/architecture` for review. Issues and milestones can track later phases once authorized. No implementation, successful workflow, deployment, or benchmark is claimed by phase 0.
+The public repository is [ABDOUUisHERE/taskrelay](https://github.com/ABDOUUisHERE/taskrelay). Phase 0 was merged through [PR #1](https://github.com/ABDOUUisHERE/taskrelay/pull/1). Issues and milestones can track later phases once authorized. A local phase 1 build is not evidence of a successful GitHub Actions run, deployment, or benchmark.
 
 ## Phases and review gates
 
@@ -53,9 +53,9 @@ Paths below are the planned scope; before each phase, present the actual file li
 
 Compose phase 5 starts the observability containers required by the specification. Their complete instrumentation, dashboard, and cross-service trace acceptance gate belongs to phase 7. Phase 2's memory adapter is explicitly volatile; it does not satisfy the Redis or crash-durability criteria.
 
-## Phase 1 file proposal for the next approval
+## Phase 1 scope
 
-The intended initial file set is:
+The approved initial file set is:
 
 ```text
 CMakeLists.txt
@@ -83,14 +83,41 @@ docs/development-plan.md         (update)
 docs/grpc-contracts.md           (update with actual field definitions)
 ```
 
-The first worker exchange is a bounded foundation smoke test; it must not claim that complete scheduling, Redis, or task lifecycle behavior exists. A dependency compatibility check may justify a revised file list before implementation. Do not start these changes without phase 1 approval.
+The implementation also supplies `common/grpc/health_client.h` and `.cc` to share the real probe between the router and tests, `tests/integration/process_smoke.py` for executable-level validation, `scripts/check-format.py`, `scripts/bootstrap-ubuntu.sh` and `scripts/dependencies-ubuntu2404.lock` for the default package profile, a release-only optional vcpkg triplet under `cmake/triplets/`, `.gitattributes` to preserve LF on Windows, and the unmodified standard gRPC health schema with upstream license attribution. These support the approved foundation scope.
+
+The first worker exchange is a bounded foundation smoke test; complete scheduling, Redis, REST, tracing, and task execution remain later work. The router is a one-shot health client in this phase. The worker advertises foundation health, while business readiness stays negative and ExecuteTask returns UNIMPLEMENTED.
+
+Default and CI dependencies are locked Ubuntu 24.04 packages: gRPC 1.51.1, Protobuf 3.21.12, and GoogleTest/GoogleMock 1.14.0. The complete vcpkg source build proved too costly for routine foundation checks, so the package profile became the validation target. Its lock fixes the application library package revisions, not the entire OS image.
+
+Optional source baseline and vcpkg checkout: `67972e92edd181d433927b42d8ab4bfa52ac164a`. Its direct ports are gRPC 1.81.1, Protobuf 7.36.2, and GoogleTest 1.18.0. All transitive port versions come from the same baseline. Protobuf and its imports compiled, but the full gRPC build and runtime checks did not complete. The upstream standard health schema is vendored from gRPC 1.81.1 and is wire-compatible with the default profile's Check/Watch RPCs. GitHub Actions references use full commit SHAs.
 
 ## Validation strategy
 
-For phase 0, inspect Markdown links and formatting, confirm the eight-file scope, check Git whitespace, and review semantic consistency between service contracts and state transitions. No runtime tests apply because no implementation exists.
+Phase 0 verification covered Markdown links and formatting, the eight-file scope, Git whitespace, and semantic consistency between contracts and state transitions. That documentation-only phase had no runtime implementation to test.
 
 For implementation phases, use GoogleTest and GoogleMock for logic and injected dependency failures; use real Redis/gRPC/REST integration tests for transactional boundaries. Include tests for lost acknowledgements, lease expiry, duplicate submissions, stale results, overload, and concurrency. Use sanitizers and thread checking where supported by the selected Linux toolchain.
 
 CI grows to include formatting, clang-tidy/static analysis, CMake build, unit tests, integration tests, Docker builds, Kubernetes schema validation, dependency checks, and retained evidence. Integration tests use bounded waits and clean up only their own resources.
 
 Benchmark reports record machine/runner details, compiler/build mode, image/dependency revisions, configuration, worker counts, warmup, sample count, and observability settings. Store raw observations; compute p50/p95/p99 and throughput from real measurements. Current benchmark and deployment status is **not measured / not executed**.
+
+## Phase 1 local verification — 2026-10-22
+
+The locked Ubuntu 24.04 amd64 profile passed a clean configure and build with GCC 13.3.0, CMake 3.28.3, Ninja 1.11.1, and clang-tidy/clang-format 18.1.3. The verified runtime/generator packages are gRPC 1.51.1, Protobuf 3.21.12, and GoogleTest/GoogleMock 1.14.0, with exact Debian revisions in the package lock.
+
+Commands executed from a Linux shell, using a Linux filesystem build directory for the Windows-hosted source:
+
+```sh
+bash scripts/bootstrap-ubuntu.sh --install-tools
+cmake --preset linux-analysis -B "$HOME/.cache/taskrelay/build/verified-analysis"
+cmake --build "$HOME/.cache/taskrelay/build/verified-analysis" --parallel 2
+ctest --test-dir "$HOME/.cache/taskrelay/build/verified-analysis" --output-on-failure \
+  --output-junit "$HOME/.cache/taskrelay/build/verified-analysis/ctest.xml"
+python3 scripts/check-format.py
+```
+
+Observed results: all three C++ executables and their generated/shared libraries built; project sources passed clang-tidy and compiler warnings treated as errors; all nine CTest cases passed; formatting passed for ten project C++/Protobuf files. Cases cover real gRPC health success/failure, unknown services, explicit unimplemented task execution, an in-flight parent deadline, expired budgets, round-robin selection across two real gRPC servers, invalid budget rejection, and actual worker/router process startup and shutdown.
+
+Both bootstrap scripts passed Bash syntax checks; the Ubuntu bootstrap verified all locked package revisions and its installation path completed successfully. Local Markdown links, preset JSON, Python tooling syntax, Git whitespace, action SHA pinning, and the unchanged vendored health-schema hash were also checked.
+
+The optional vcpkg build resolved its pinned dependencies and built Protobuf, but was stopped during gRPC compilation. Its full build/runtime profile is unverified. GitHub Actions has been prepared but has not run for this branch. REST, task processing, Redis, container/cluster deployment, telemetry, and benchmarks remain outside this phase's verified behavior.
