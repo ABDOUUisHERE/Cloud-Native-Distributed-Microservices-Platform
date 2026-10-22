@@ -8,7 +8,7 @@ Use Ubuntu 24.04 amd64 with the exact library package revisions in `scripts/depe
 bash scripts/bootstrap-ubuntu.sh --install-tools
 cmake --preset linux-analysis
 cmake --build --preset linux-analysis
-ctest --preset linux-analysis --output-junit build/analysis/ctest.xml
+ctest --preset linux-analysis --output-junit "$PWD/build/analysis/ctest.xml"
 python3 scripts/check-format.py
 ```
 

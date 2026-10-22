@@ -54,11 +54,12 @@ jobs:
       - name: Compile generated contracts and application targets
         run: cmake --build --preset linux-analysis
       - name: Run unit and service integration tests
-        run: ctest --preset linux-analysis --output-junit build/analysis/ctest.xml
+        id: tests
+        run: ctest --preset linux-analysis --output-junit "$PWD/build/analysis/ctest.xml"
       - name: Retain test report
-        if: always()
+        if: ${{ !cancelled() && steps.tests.outcome != 'skipped' }}
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: service-test-report
           path: build/analysis/ctest.xml
-          if-no-files-found: ignore
+          if-no-files-found: error
