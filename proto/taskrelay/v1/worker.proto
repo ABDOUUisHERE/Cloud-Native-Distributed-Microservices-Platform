@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package taskrelay.v1;
+
+import "taskrelay/v1/task.proto";
+
+message ExecuteTaskRequest {
+  TaskLease lease = 1;
+}
+
+message ExecuteTaskResponse {
+  enum Outcome {
+    OUTCOME_UNSPECIFIED = 0;
+    OUTCOME_COMPLETED = 1;
+    OUTCOME_RETRY_SCHEDULED = 2;
+    OUTCOME_FAILED = 3;
+  }
+  string task_id = 1;
+  uint32 attempt_number = 2;
+  Outcome outcome = 3;
+}
+
+service WorkerService {
+  rpc ExecuteTask(ExecuteTaskRequest) returns (ExecuteTaskResponse);
+}

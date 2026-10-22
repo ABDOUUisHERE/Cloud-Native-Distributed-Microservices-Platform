@@ -1,0 +1,39 @@
+cmake_minimum_required(VERSION 3.28)
+project(TaskRelay VERSION 0.1.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+option(TASKRELAY_ENABLE_CLANG_TIDY "Analyze project C++ during compilation" OFF)
+option(TASKRELAY_ENABLE_SANITIZERS "Enable address and undefined-behavior sanitizers" OFF)
+
+find_package(Protobuf CONFIG QUIET)
+if(NOT Protobuf_FOUND)
+    find_package(Protobuf REQUIRED)
+endif()
+find_package(gRPC CONFIG REQUIRED)
+find_package(Threads REQUIRED)
+include(CTest)
+
+add_library(taskrelay_options INTERFACE)
+target_compile_options(taskrelay_options INTERFACE
+    "$<$<CXX_COMPILER_ID:GNU,Clang>:-Wall;-Wextra;-Wpedantic;-Werror>")
+if(TASKRELAY_ENABLE_SANITIZERS)
+    target_compile_options(taskrelay_options INTERFACE -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(taskrelay_options INTERFACE -fsanitize=address,undefined)
+endif()
+
+# Generated Protobuf sources are intentionally excluded from project lint rules.
+add_subdirectory(proto)
+if(TASKRELAY_ENABLE_CLANG_TIDY)
+    find_program(TASKRELAY_CLANG_TIDY NAMES clang-tidy-18 REQUIRED)
+    set(CMAKE_CXX_CLANG_TIDY "${TASKRELAY_CLANG_TIDY};--warnings-as-errors=*")
+endif()
+add_subdirectory(common)
+add_subdirectory(services/processing-worker)
+add_subdirectory(services/task-router)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

@@ -1,0 +1,128 @@
+syntax = "proto3";
+
+package taskrelay.v1;
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+enum TaskType {
+  TASK_TYPE_UNSPECIFIED = 0;
+  TASK_TYPE_NUMERIC = 1;
+  TASK_TYPE_TRANSFORM = 2;
+  TASK_TYPE_NETWORK_SIMULATION = 3;
+}
+
+enum TaskState {
+  TASK_STATE_UNSPECIFIED = 0;
+  TASK_STATE_PENDING = 1;
+  TASK_STATE_RUNNING = 2;
+  TASK_STATE_COMPLETED = 3;
+  TASK_STATE_FAILED = 4;
+  TASK_STATE_RETRY_PENDING = 5;
+}
+
+message NumericInput {
+  enum Operation {
+    OPERATION_UNSPECIFIED = 0;
+    OPERATION_MONTE_CARLO_PI = 1;
+  }
+  Operation operation = 1;
+  uint64 iterations = 2;
+  uint64 seed = 3;
+}
+
+message TransformInput {
+  enum Operation {
+    OPERATION_UNSPECIFIED = 0;
+    OPERATION_ASCII_UPPERCASE = 1;
+    OPERATION_REVERSE_CODEPOINTS = 2;
+  }
+  Operation operation = 1;
+  string data = 2;
+}
+
+// Entirely local; this input deliberately has no external address field.
+message NetworkSimulationInput {
+  uint32 packet_count = 1;
+  uint32 packet_size_bytes = 2;
+  uint64 seed = 3;
+  uint32 loss_parts_per_million = 4;
+  google.protobuf.Duration synthetic_delay = 5;
+}
+
+message TaskSpec {
+  TaskType type = 1;
+  oneof input {
+    NumericInput numeric = 2;
+    TransformInput transform = 3;
+    NetworkSimulationInput network_simulation = 4;
+  }
+  google.protobuf.Duration execution_timeout = 5;
+}
+
+message NumericResult {
+  double value = 1;
+  uint64 iterations = 2;
+}
+
+message TransformResult {
+  string data = 1;
+}
+
+message NetworkSimulationResult {
+  uint32 delivered_packets = 1;
+  uint32 dropped_packets = 2;
+  uint64 delivered_bytes = 3;
+  google.protobuf.Duration simulated_duration = 4;
+}
+
+message TaskResult {
+  oneof output {
+    NumericResult numeric = 1;
+    TransformResult transform = 2;
+    NetworkSimulationResult network_simulation = 3;
+  }
+}
+
+message TaskError {
+  enum Code {
+    CODE_UNSPECIFIED = 0;
+    CODE_INVALID_INPUT = 1;
+    CODE_PROCESSING_FAILED = 2;
+    CODE_DEPENDENCY_UNAVAILABLE = 3;
+    CODE_CAPACITY_EXCEEDED = 4;
+    CODE_DEADLINE_EXCEEDED = 5;
+    CODE_LEASE_EXPIRED = 6;
+    CODE_ATTEMPTS_EXHAUSTED = 7;
+  }
+  Code code = 1;
+  string message = 2;
+  bool retryable = 3;
+}
+
+// Public task view. Tokens and raw idempotency keys never belong here.
+message Task {
+  string id = 1;
+  TaskSpec spec = 2;
+  TaskState state = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp updated_at = 5;
+  google.protobuf.Timestamp deadline = 6;
+  uint32 attempt_count = 7;
+  TaskResult result = 8;
+  TaskError error = 9;
+  string correlation_id = 10;
+}
+
+// Internal coordination view; never serialize this in a public REST response.
+message TaskLease {
+  Task task = 1;
+  string attempt_token = 2;
+  uint32 attempt_number = 3;
+  google.protobuf.Timestamp expires_at = 4;
+}
+
+message Page {
+  repeated Task tasks = 1;
+  string next_cursor = 2;
+}

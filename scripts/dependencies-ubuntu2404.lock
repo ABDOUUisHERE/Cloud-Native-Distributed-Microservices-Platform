@@ -1,0 +1,21 @@
+# Ubuntu 24.04 amd64 foundation libraries, verified on 2026-10-22.
+# Update deliberately and rerun the full foundation checks; do not float versions.
+googletest=1.14.0-1
+libabsl-dev=20220623.1-3.1ubuntu3.2
+libabsl20220623t64=20220623.1-3.1ubuntu3.2
+libc-ares-dev=1.27.0-1.0ubuntu1.1
+libcares2=1.27.0-1.0ubuntu1.1
+libgmock-dev=1.14.0-1
+libgrpc++-dev=1.51.1-4.1build5
+libgrpc++1.51t64=1.51.1-4.1build5
+libgrpc-dev=1.51.1-4.1build5
+libgrpc29t64=1.51.1-4.1build5
+libgtest-dev=1.14.0-1
+libprotobuf-dev=3.21.12-8.2ubuntu0.4
+libprotobuf-lite32t64=3.21.12-8.2ubuntu0.4
+libprotobuf32t64=3.21.12-8.2ubuntu0.4
+libprotoc32t64=3.21.12-8.2ubuntu0.4
+libre2-10=20230301-3build1
+libre2-dev=20230301-3build1
+protobuf-compiler=3.21.12-8.2ubuntu0.4
+protobuf-compiler-grpc=1.51.1-4.1build5
