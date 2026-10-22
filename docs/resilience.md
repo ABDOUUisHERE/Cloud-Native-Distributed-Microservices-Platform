@@ -1,6 +1,6 @@
 # State machine and resilience
 
-Status: phase 0 failure model. All scenarios require implementation and verification.
+Status: target failure model from phase 0. Phase 2 supplies volatile task processing and basic ownership checks; the Redis/recovery guarantees below remain planned. The current memory adapter boundary is recorded at the end.
 
 ## Guarantees and invariants
 
@@ -104,3 +104,7 @@ Liveness reports process/control-loop progress and does not fail solely because 
 Record request/operation duration histograms, retry counters, accepted completion/failure counts, current backlog, breaker state, active execution count, lease recoveries, stale-token rejections, and service availability. Attribute executions to worker instances. Log lifecycle changes with task/correlation IDs and sanitized errors; keep high-cardinality identifiers out of metric labels.
 
 Each resilience scenario will assert the authoritative final task state, finite completion or failure time, attempt limit, and absence of stale overwrites. A successful final state alone is insufficient evidence that recovery was safe.
+
+## Phase 2 memory adapter
+
+The target recovery model above is not implemented by the phase 2 memory adapter. It supports one attempt, guarded ownership, renewal, matching completion replay, bounded worker token retention, and terminal failure on lease/task expiry. State loss discards all tasks and keys. There is no Redis, retry scheduling, circuit breaker, or restart recovery yet. Gateway readiness checks the router and State Service; internal gRPC health currently describes local registration. See [the implementation boundary](grpc-contracts.md#phase-2-implementation-boundary).

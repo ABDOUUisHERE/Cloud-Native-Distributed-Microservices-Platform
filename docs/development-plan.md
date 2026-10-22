@@ -1,6 +1,6 @@
 # Development plan and GitHub workflow
 
-Status: phase 0 merged through PR #1; phase 1 is implemented and verified locally on `build/cpp-grpc-foundation` using the locked Ubuntu profile. The project uses English throughout. Remote publication of phase 1 and later phase starts remain subject to explicit approval.
+Status: phases 0 and 1 merged through PRs #1 and #2. Phase 1 checks passed on its branch and on merged main. Phase 2 is implemented and locally verified on `feat/task-processing`. Its publication and merge still require authorization. The project uses English throughout.
 
 ## Environment inspection
 
@@ -32,7 +32,7 @@ These are the phase 0 observations. Phase 1 installed CMake 3.28.3, Ninja 1.11.1
 
 Use English for all documentation, source code, comments, user-facing content, commit messages, and PR descriptions. Use conventional commit subjects such as `docs(architecture): define task lifecycle`, `build(cmake): add reproducible C++ toolchain`, or `feat(state): enforce lease fencing`. Commit titles describe changes actually present. PR descriptions explain resulting behavior, verification, and material limitations. Link issue numbers only after real issues exist.
 
-The public repository is [ABDOUUisHERE/taskrelay](https://github.com/ABDOUUisHERE/taskrelay). Phase 0 was merged through [PR #1](https://github.com/ABDOUUisHERE/taskrelay/pull/1). Issues and milestones can track later phases once authorized. A local phase 1 build is not evidence of a successful GitHub Actions run, deployment, or benchmark.
+The public repository is [ABDOUUisHERE/Cloud-Native-Distributed-Microservices-Platform](https://github.com/ABDOUUisHERE/Cloud-Native-Distributed-Microservices-Platform). Phase 0 was merged through [PR #1](https://github.com/ABDOUUisHERE/Cloud-Native-Distributed-Microservices-Platform/pull/1). Issues and milestones can track later phases once authorized. A local phase 1 build is not evidence of a successful GitHub Actions run, deployment, or benchmark.
 
 ## Phases and review gates
 
@@ -120,4 +120,31 @@ Observed results: all three C++ executables and their generated/shared libraries
 
 Both bootstrap scripts passed Bash syntax checks; the Ubuntu bootstrap verified all locked package revisions and its installation path completed successfully. Local Markdown links, preset JSON, Python tooling syntax, Git whitespace, action SHA pinning, and the unchanged vendored health-schema hash were also checked.
 
-The optional vcpkg build resolved its pinned dependencies and built Protobuf, but was stopped during gRPC compilation. Its full build/runtime profile is unverified. GitHub Actions has been prepared but has not run for this branch. REST, task processing, Redis, container/cluster deployment, telemetry, and benchmarks remain outside this phase's verified behavior.
+The optional vcpkg build resolved its pinned dependencies and built Protobuf, but was stopped during gRPC compilation. Its full build/runtime profile is unverified. At this local verification point GitHub Actions had not run. The subsequent PR #2 and merged-main checks both succeeded. REST, task processing, Redis, container/cluster deployment, telemetry, and benchmarks remain outside this phase's verified behavior.
+
+## Phase 2 scope and implementation
+
+Approved files cover gateway routes and entry point; State Service memory store, RPC adapter, and entry point; router submission and dispatcher; worker service and processors; shared validation, state client, and bounded executor; CMake/dependency/CI updates; unit, gRPC, and real-process REST tests; and affected documentation. The shared state client also hosts signal and gRPC server lifecycle helpers to avoid copying them into three services. Supporting additions are `tests/unit/bounded_executor_test.cc` and this phase's `docs/testing.md`.
+
+The implementation uses Ubuntu Drogon 1.8.7, Trantor 1.5.12, and JsonCpp 1.9.5. Ubuntu's Drogon CMake export requires development packages for its optional compiled-in database/Redis/YAML integrations; these are locked even though application processing uses none of those backends. A scoped CMP0153 compatibility policy handles its old FindJsoncpp module. OpenSSL supplies UUID randomness; the base security stack remains under Ubuntu updates.
+
+The README now uses the user's requested full project title and canonical renamed public repository URL; the internal `taskrelay` package and executable names remain consistent with the checked-in contracts. The complete optional vcpkg source profile remains unverified.
+
+The single-dispatch loop and volatile memory adapter deliberately establish a working task path first. Redis coordination, durable recovery, retry state transitions, circuit breaking, distribution metrics, and deployment verification remain their own phases. See [the phase 2 boundary](grpc-contracts.md#phase-2-implementation-boundary).
+
+## Phase 2 local verification - 2026-10-22
+
+Verified the locked Ubuntu 24.04 amd64 profile in WSL with GCC 13.3.0, CMake 3.28.3, Ninja 1.11.1, and Clang tooling 18.1.3. The bootstrap installation/verification path succeeded with all locked package revisions, including Drogon 1.8.7, Trantor 1.5.12, and JsonCpp 1.9.5.
+
+```sh
+bash scripts/bootstrap-ubuntu.sh --install-tools
+cmake --preset linux-analysis -B "$HOME/.cache/taskrelay/build/phase2-debug"
+cmake --build "$HOME/.cache/taskrelay/build/phase2-debug" --parallel 4
+ctest --test-dir "$HOME/.cache/taskrelay/build/phase2-debug" --output-on-failure \
+  --output-junit "$HOME/.cache/taskrelay/build/phase2-debug/ctest.xml"
+python3 scripts/check-format.py
+```
+
+Observed: all four services compiled with warnings as errors and project clang-tidy checks; all 29 CTest cases passed (27 GoogleTest cases and two real-process Python tests). Formatting passed for 36 project C++/Protobuf files. The final suite includes an expired owned lease rejecting a late completion. REST validation covers successful results for all three workloads, correlation/Location headers, retained-key replay/conflict, request/media limits, pagination, concurrent same-key submissions, State Service loss, ready/live behavior, and graceful shutdown of the actual processes.
+
+Python syntax, JSON manifests, local documentation links, package revisions, and Git whitespace were also checked. The independent Core5G working tree remained clean. GitHub Actions for phase 2 has not run: the workflow and its JUnit artifact are prepared locally for publication after authorization. No optional vcpkg, Redis, deployment, telemetry, sanitizer, or benchmark result is claimed by this verification.

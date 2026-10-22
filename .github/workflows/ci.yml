@@ -1,4 +1,4 @@
-name: C++ foundation
+name: C++ services
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: foundation-${{ github.workflow }}-${{ github.ref }}
+  group: services-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -37,12 +37,12 @@ jobs:
         run: cmake --preset linux-analysis
       - name: Compile generated contracts and application targets
         run: cmake --build --preset linux-analysis
-      - name: Run foundation integration tests
+      - name: Run unit and service integration tests
         run: ctest --preset linux-analysis --output-junit build/analysis/ctest.xml
       - name: Retain test report
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: foundation-test-report
+          name: service-test-report
           path: build/analysis/ctest.xml
           if-no-files-found: ignore
