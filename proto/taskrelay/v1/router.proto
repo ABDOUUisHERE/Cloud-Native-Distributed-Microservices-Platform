@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package taskrelay.v1;
+
+import "taskrelay/v1/task.proto";
+
+message SubmitTaskRequest {
+  TaskSpec spec = 1;
+  string idempotency_key = 2;
+}
+
+message SubmitTaskResponse {
+  Task task = 1;
+  bool replayed = 2;
+}
+
+service TaskRouterService {
+  rpc SubmitTask(SubmitTaskRequest) returns (SubmitTaskResponse);
+}

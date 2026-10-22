@@ -1,6 +1,6 @@
 # Requirements and acceptance criteria
 
-Status: approved direction recorded during phase 0; all implementation criteria below remain unverified.
+Status: approved direction recorded during phase 0; phase 1 adds wire contracts and a gRPC foundation. The full acceptance criteria below remain pending until their corresponding service, deployment, and test phases are implemented.
 
 ## Purpose and scope
 
@@ -51,7 +51,7 @@ The source is the user's original technical specification, version 1.0. The user
 | Q08 | Resilience tests interrupt a worker, router, Redis, a gRPC call, and a Kubernetes pod | Reproducible scenarios with observed state outcomes |
 | Q09 | Benchmarks record throughput, p50/p95/p99, CPU, memory, and replica scaling | Raw real measurements with environment and methodology |
 | Q10 | CI checks formatting, static analysis, build, unit/integration tests, images, manifests, and dependencies | Successful workflow runs with retained artifacts |
-| Q11 | Dependencies and tooling are reproducible | Pinned vcpkg revision/baseline, image digests, and action revisions |
+| Q11 | Dependencies and tooling are reproducible | Locked Ubuntu library versions or pinned vcpkg baseline, plus image digests and action revisions; record base OS/toolchain versions |
 | Q12 | Kubernetes HPA is added only after a usable metrics source exists | Metrics-server or validated custom metrics setup and scaling evidence |
 
 ## REST surface
@@ -64,6 +64,6 @@ The final repository must contain `README.md` and the following documents under 
 
 ## Approval and completion rules
 
-Before each phase, present files to create or modify and obtain the user's agreement. Do not publish commits without explicit authorization. Phase 0 publication to the public TaskRelay repository is authorized. This does not authorize phase 1, later publication, or merging pull requests.
+Before each phase, present files to create or modify and obtain the user's agreement. Do not publish commits without explicit authorization. Phase 0 was published and merged with approval. Phase 1 local implementation is authorized; its publication, merge, and later phase starts require their own approval.
 
 The project is complete only when all required services compile and operate, both deployment paths work, workers distribute tasks, recovery scenarios are demonstrated, telemetry is visible, automated checks pass, and the documentation reproduces those demonstrations. No benchmark target or CI success is inferred from a design document.

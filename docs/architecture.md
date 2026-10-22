@@ -1,6 +1,6 @@
 # Architecture
 
-Status: phase 0 design. Implementations and exact dependency revisions remain to be validated in later approved phases.
+Status: target architecture from phase 0, with a phase 1 C++/gRPC foundation verified locally on its locked Ubuntu profile. Business processing, persistence, deployments, and telemetry below remain planned. The foundation currently provides generated contracts and a worker health exchange, not the full topology.
 
 ## Service boundaries
 
@@ -82,7 +82,7 @@ The initial design targets one Redis primary, not Redis Cluster. Cross-key scrip
 | Area | Proposed dependency | Reason |
 | --- | --- | --- |
 | Toolchain | C++20, CMake, Ninja | Explicit build targets and repeatable Linux builds |
-| Dependency management | vcpkg manifest mode | Single recorded baseline and pinned vcpkg checkout |
+| Dependency management | Locked Ubuntu packages by default; optional vcpkg manifest | Practical foundation builds with explicit package revisions; separate source-build baseline |
 | HTTP | Drogon | HTTP routing and asynchronous response handling |
 | RPC | gRPC C++, Protobuf | Typed versioned interfaces and explicit deadlines |
 | Redis | redis-plus-plus, hiredis | C++ Redis client with connection pooling |
@@ -93,7 +93,9 @@ The initial design targets one Redis primary, not Redis Cluster. Cross-key scrip
 
 Do not block Drogon's HTTP event loop on synchronous RPCs. Initially use bounded transport executors for blocking RPCs and a separate worker processing pool; use `std::jthread`, RAII, cooperative cancellation, and explicit shutdown ownership. Bound thread counts and request queues. The maximum execution duration must include queueing and serialization time.
 
-Phase 1 will record exact dependency versions, a full vcpkg baseline SHA and tool checkout revision, and a successful compatibility build. Container base images and GitHub Actions will be pinned as they are introduced. Avoid floating branches or `latest` tags in validated builds.
+The phase 1 default and CI profile use Ubuntu 24.04 packages: gRPC 1.51.1, Protobuf 3.21.12, and GoogleTest/GoogleMock 1.14.0. Exact package revisions, including related Abseil, c-ares, and RE2 packages, are recorded in `scripts/dependencies-ubuntu2404.lock`. Bootstrap verifies versions and does not silently upgrade a missing locked version. Base OS packages and security updates are outside this library lock; bit-identical binaries are not claimed.
+
+The optional vcpkg baseline and tool checkout are pinned to `67972e92edd181d433927b42d8ab4bfa52ac164a`, selecting gRPC 1.81.1, Protobuf 7.36.2, and GoogleTest 1.18.0. Its complete source build was stopped during gRPC compilation and is not a validated runtime profile. This change from the original single-vcpkg proposal keeps routine builds practical while preserving an explicit source-build option. Each profile generates its own bindings with its matching compiler/runtime. Other proposed libraries are deferred until their implementation phases. Initial GitHub Actions use full commit SHAs; container base images will be pinned when introduced.
 
 Primary references: [Drogon](https://github.com/drogonframework/drogon), [redis-plus-plus](https://github.com/sewenew/redis-plus-plus), [prometheus-cpp](https://github.com/jupp0r/prometheus-cpp), [OpenTelemetry C++](https://opentelemetry.io/docs/languages/cpp/), and [vcpkg versioning](https://learn.microsoft.com/en-us/vcpkg/users/versioning).
 
@@ -107,7 +109,7 @@ Metrics use bounded labels such as service, operation, task type, status, and wo
 
 ## Target repository structure
 
-Only phase 0 documents and repository metadata exist initially. The target below is not a list of implemented components.
+The tree below is the final target, not a list of implemented components. Phase 1 adds only the build system, generated contracts, the foundation worker/router probe, their tests, and supporting tooling.
 
 ```text
 taskrelay/
@@ -155,7 +157,7 @@ taskrelay/
 | Lease expiry during a long pause | Heartbeats and fencing; old computation may overlap a retry, but stale publication is rejected |
 | Nonuniform task cost | Bounded admission and per-worker metrics; round-robin does not guarantee equal utilization |
 | DNS resolver staleness | Prove membership refresh during Kind scaling before accepting phase 6 |
-| Expensive C++ dependency builds | Pinned toolchain and cache keyed by baseline, compiler, platform, and build options |
+| Expensive C++ dependency builds | Use locked Ubuntu packages for the default foundation and CI; optional vcpkg source builds remain costly and unverified |
 | State Service bottleneck | Measure first, bound requests, then consider replicas; Redis atomicity is retained |
 | CPU-only autoscaling misses backlog | Start with manual scaling; introduce HPA after validating CPU or custom queue metrics |
 | OneDrive build overhead | Keep source in the selected repository; place Linux build caches in the WSL filesystem |

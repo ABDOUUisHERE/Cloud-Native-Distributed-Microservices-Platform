@@ -1,0 +1,140 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 28,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "linux-debug",
+      "displayName": "Linux C++20 debug build",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/debug",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "g++",
+        "BUILD_TESTING": "ON"
+      }
+    },
+    {
+      "name": "linux-release",
+      "inherits": "linux-debug",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "linux-analysis",
+      "inherits": "linux-debug",
+      "binaryDir": "${sourceDir}/build/analysis",
+      "cacheVariables": {
+        "TASKRELAY_ENABLE_CLANG_TIDY": "ON"
+      }
+    },
+    {
+      "name": "linux-vcpkg-debug",
+      "inherits": "linux-debug",
+      "binaryDir": "${sourceDir}/build/vcpkg-debug",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-linux-release",
+        "VCPKG_HOST_TRIPLET": "x64-linux-release",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/cmake/triplets"
+      }
+    },
+    {
+      "name": "linux-vcpkg-analysis",
+      "inherits": "linux-vcpkg-debug",
+      "binaryDir": "${sourceDir}/build/vcpkg-analysis",
+      "cacheVariables": {
+        "TASKRELAY_ENABLE_CLANG_TIDY": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "linux-debug",
+      "configurePreset": "linux-debug",
+      "jobs": 2
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release",
+      "jobs": 2
+    },
+    {
+      "name": "linux-analysis",
+      "configurePreset": "linux-analysis",
+      "jobs": 2
+    },
+    {
+      "name": "linux-vcpkg-debug",
+      "configurePreset": "linux-vcpkg-debug",
+      "jobs": 2
+    },
+    {
+      "name": "linux-vcpkg-analysis",
+      "configurePreset": "linux-vcpkg-analysis",
+      "jobs": 2
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "linux-debug",
+      "configurePreset": "linux-debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 20
+      }
+    },
+    {
+      "name": "linux-release",
+      "configurePreset": "linux-release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 20
+      }
+    },
+    {
+      "name": "linux-analysis",
+      "configurePreset": "linux-analysis",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 20
+      }
+    },
+    {
+      "name": "linux-vcpkg-debug",
+      "configurePreset": "linux-vcpkg-debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 20
+      }
+    },
+    {
+      "name": "linux-vcpkg-analysis",
+      "configurePreset": "linux-vcpkg-analysis",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "timeout": 20
+      }
+    }
+  ]
+}

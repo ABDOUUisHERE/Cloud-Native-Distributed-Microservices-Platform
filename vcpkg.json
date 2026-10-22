@@ -1,0 +1,11 @@
+{
+  "name": "taskrelay",
+  "version-semver": "0.1.0",
+  "description": "Cloud-Native Distributed Microservices Platform: C++20 task-processing laboratory",
+  "builtin-baseline": "67972e92edd181d433927b42d8ab4bfa52ac164a",
+  "dependencies": [
+    {"name": "grpc", "features": ["codegen"]},
+    "protobuf",
+    "gtest"
+  ]
+}

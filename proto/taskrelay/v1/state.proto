@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package taskrelay.v1;
+
+import "google/protobuf/timestamp.proto";
+import "taskrelay/v1/task.proto";
+
+message CreateTaskRequest {
+  TaskSpec spec = 1;
+  string idempotency_key = 2;
+}
+message CreateTaskResponse {
+  Task task = 1;
+  bool replayed = 2;
+}
+message GetTaskRequest {
+  string task_id = 1;
+}
+message ListTasksRequest {
+  repeated TaskState state_filter = 1;
+  uint32 page_size = 2;
+  string cursor = 3;
+}
+message AcquireTaskRequest {
+  string router_id = 1;
+}
+message AcquireTaskResponse {
+  // An absent message means there is no eligible work.
+  TaskLease lease = 1;
+}
+message StartTaskRequest {
+  string task_id = 1;
+  string token = 2;
+  string worker_id = 3;
+}
+message RenewLeaseRequest {
+  string task_id = 1;
+  string token = 2;
+  string worker_id = 3;
+}
+message LeaseExpiry {
+  google.protobuf.Timestamp expires_at = 1;
+}
+message CompleteTaskRequest {
+  string task_id = 1;
+  string token = 2;
+  string worker_id = 3;
+  TaskResult result = 4;
+}
+message FailAttemptRequest {
+  string task_id = 1;
+  string token = 2;
+  string actor_id = 3;
+  TaskError error = 4;
+}
+
+service StateService {
+  rpc CreateTask(CreateTaskRequest) returns (CreateTaskResponse);
+  rpc GetTask(GetTaskRequest) returns (Task);
+  rpc ListTasks(ListTasksRequest) returns (Page);
+  rpc AcquireTask(AcquireTaskRequest) returns (AcquireTaskResponse);
+  rpc StartTask(StartTaskRequest) returns (Task);
+  rpc RenewLease(RenewLeaseRequest) returns (LeaseExpiry);
+  rpc CompleteTask(CompleteTaskRequest) returns (Task);
+  rpc FailAttempt(FailAttemptRequest) returns (Task);
+}
