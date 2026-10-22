@@ -6,6 +6,8 @@
   "dependencies": [
     {"name": "grpc", "features": ["codegen"]},
     "protobuf",
-    "gtest"
+    "gtest",
+    "drogon",
+    "openssl"
   ]
 }

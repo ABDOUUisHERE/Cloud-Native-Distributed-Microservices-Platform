@@ -1,2 +1,4 @@
+add_library(taskrelay_processing STATIC workloads.cc worker_service.cc)
+target_link_libraries(taskrelay_processing PUBLIC taskrelay_common)
 add_executable(taskrelay-worker main.cc)
-target_link_libraries(taskrelay-worker PRIVATE taskrelay_common Threads::Threads)
+target_link_libraries(taskrelay-worker PRIVATE taskrelay_processing)

@@ -23,14 +23,14 @@ def main():
     reader.start()
     try:
         line = output.get(timeout=5)
-        assert line.startswith("Foundation worker bound port: "), line
+        assert line.startswith("gRPC bound port: "), line
         port = int(line.rsplit(":", 1)[1])
         assert 0 < port <= 65535
         result = subprocess.run(
-            [router_binary, f"127.0.0.1:{port}"],
+            [router_binary, "--probe", f"127.0.0.1:{port}"],
             capture_output=True, text=True, timeout=5, check=True,
         )
-        assert result.stdout.strip() == "Worker foundation health: SERVING"
+        assert result.stdout.strip() == "Worker health: SERVING"
     finally:
         worker.terminate()
         try:
@@ -44,7 +44,7 @@ def main():
 
     # A stopped worker must fail promptly rather than hanging or reporting success.
     stopped = subprocess.run(
-        [router_binary, f"127.0.0.1:{port}"],
+        [router_binary, "--probe", f"127.0.0.1:{port}"],
         capture_output=True, text=True, timeout=3,
     )
     assert stopped.returncode == 1, stopped
